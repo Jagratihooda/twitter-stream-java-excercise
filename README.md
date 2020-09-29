@@ -2,9 +2,10 @@
 
   http://localhost:8081/tweetstreaming/process-tweets
 
-- Configure Consumer key, Consumer Scret in application properties
+- Configure Consumer key, ConsumerSecret in application properties
 
   auth.consumer.key 
+  
   auth.consumer.secret 
 
 - Configure Search Param in application properties
