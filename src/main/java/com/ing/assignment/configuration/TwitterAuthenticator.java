@@ -4,124 +4,115 @@ import com.google.api.client.auth.oauth.*;
 import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
+import com.ing.assignment.constant.TwitterStreamConstants;
 import com.ing.assignment.exception.TwitterAuthenticationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.naming.AuthenticationException;
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.Scanner;
+import java.io.InputStreamReader;
 
-
-
+/*
+ * This class is used to perform Authorization
+ *  while connecting to Twitter
+ *
+ * */
 public class TwitterAuthenticator {
 
-    private static final Logger logger = LoggerFactory.getLogger(TwitterAuthenticator.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TwitterAuthenticator.class);
 
     private final String consumerKey;
     private final String consumerSecret;
-    private HttpRequestFactory factory;
+    private HttpRequestFactory requestFactory;
 
-    private static final HttpTransport TRANSPORT = new NetHttpTransport();
-    private static final String AUTHORIZE_URL = "https://api.twitter.com/oauth/authorize";
-    private static final String ACCESS_TOKEN_URL = "https://api.twitter.com/oauth/access_token";
-    private static final String REQUEST_TOKEN_URL = "https://api.twitter.com/oauth/request_token";
-
+    private static final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
 
     public TwitterAuthenticator(final String consumerKey, final String consumerSecret) {
         this.consumerKey = consumerKey;
         this.consumerSecret = consumerSecret;
     }
 
-    public synchronized HttpRequestFactory getAuthorizedHttpRequestFactory() throws TwitterAuthenticationException {
-        if (factory != null) {
-            return factory;
+    /**
+     * This method initializes an HTTP request factory and return the authenticated HTTP request factory
+     *
+     * @return requestFactory
+     */
+    public HttpRequestFactory getHttpRequestFactory() throws AuthenticationException {
+        if (requestFactory != null) {
+            return requestFactory;
         }
-        factory = createRequestFactory();
-        return factory;
+        requestFactory = retrieveHttpRequestFactory();
+        return requestFactory;
     }
 
-
-    private HttpRequestFactory createRequestFactory() throws TwitterAuthenticationException {
+    private HttpRequestFactory retrieveHttpRequestFactory() throws AuthenticationException {
+        LOGGER.info("creating Request Factory");
         OAuthHmacSigner signer = new OAuthHmacSigner();
         signer.clientSharedSecret = consumerSecret;
 
-        OAuthCredentialsResponse requestTokenResponse = getTemporaryToken(signer);
-        signer.tokenSharedSecret = requestTokenResponse.tokenSecret;
+        OAuthCredentialsResponse credentialsResponse = retrieveTempToken(signer);
+        signer.tokenSharedSecret = credentialsResponse.tokenSecret;
 
+        OAuthAuthorizeTemporaryTokenUrl authTempTokenUrl = new OAuthAuthorizeTemporaryTokenUrl(TwitterStreamConstants.AUTHORIZATION_URL);
+        authTempTokenUrl.temporaryToken = credentialsResponse.token;
 
-        OAuthAuthorizeTemporaryTokenUrl authorizeUrl = new OAuthAuthorizeTemporaryTokenUrl(AUTHORIZE_URL);
-        authorizeUrl.temporaryToken = requestTokenResponse.token;
-
-
-        String providedPin = retrievePin(authorizeUrl);
-
-        OAuthCredentialsResponse accessTokenResponse = retrieveAccessTokens(providedPin, signer, requestTokenResponse.token);
+        OAuthCredentialsResponse accessTokenResponse = getAccessTokenResponse(getProvidedPinByUser(authTempTokenUrl), credentialsResponse.token, signer);
         signer.tokenSharedSecret = accessTokenResponse.tokenSecret;
 
-        OAuthParameters parameters = new OAuthParameters();
-        parameters.consumerKey = consumerKey;
-        parameters.token = accessTokenResponse.token;
-        parameters.signer = signer;
-
-        return TRANSPORT.createRequestFactory(parameters);
+        OAuthParameters authParams = new OAuthParameters();
+        authParams.signer = signer;
+        authParams.consumerKey = consumerKey;
+        authParams.token = accessTokenResponse.token;
+        return HTTP_TRANSPORT.createRequestFactory(authParams);
     }
 
-
-    private OAuthCredentialsResponse getTemporaryToken(final OAuthHmacSigner signer) throws TwitterAuthenticationException {
-        OAuthGetTemporaryToken requestToken = new OAuthGetTemporaryToken(REQUEST_TOKEN_URL);
-        requestToken.consumerKey = consumerKey;
-        requestToken.transport = TRANSPORT;
-        requestToken.signer = signer;
-
-        OAuthCredentialsResponse requestTokenResponse;
-        try {
-            requestTokenResponse = requestToken.execute();
-        } catch (IOException e) {
-            throw new TwitterAuthenticationException("Unable to aquire temporary token: " + e.getMessage(), e);
-        }
-
-        logger.info("Aquired temporary token...");
-        return requestTokenResponse;
-    }
-
-
-
-    private String retrievePin(final OAuthAuthorizeTemporaryTokenUrl authorizeUrl) throws TwitterAuthenticationException {
-        String providedPin;
-        Scanner scanner = new Scanner(System.in);
-        try {
-            logger.info("Go to the following link in your browser:\n" + authorizeUrl.build());
-            logger.info("\nPlease enter the retrieved PIN:");
-            providedPin = scanner.nextLine();
-        } finally {
-            scanner.close();
-        }
-
-        if (providedPin == null) {
-            throw new TwitterAuthenticationException("Unable to read entered PIN");
-        }
-
-        return providedPin;
-    }
-
-
-    private OAuthCredentialsResponse retrieveAccessTokens(final String providedPin, final OAuthHmacSigner signer, final String token) throws TwitterAuthenticationException {
-        OAuthGetAccessToken accessToken = new OAuthGetAccessToken(ACCESS_TOKEN_URL);
+    private OAuthCredentialsResponse getAccessTokenResponse(final String providedPin, final String token, final OAuthHmacSigner signer) {
+        OAuthCredentialsResponse accessTokenResponse;
+        OAuthGetAccessToken accessToken = new OAuthGetAccessToken(TwitterStreamConstants.ACCESS_TOKEN_URL);
         accessToken.verifier = providedPin;
         accessToken.consumerKey = consumerSecret;
         accessToken.signer = signer;
-        accessToken.transport = TRANSPORT;
+        accessToken.transport = HTTP_TRANSPORT;
         accessToken.temporaryToken = token;
 
-        OAuthCredentialsResponse accessTokenResponse;
         try {
             accessTokenResponse = accessToken.execute();
         } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-            throw new TwitterAuthenticationException("Unable to authorize access: " + e.getMessage(), e);
+            throw new TwitterAuthenticationException("Can not retrieve access token: " + e.getMessage(), e);
         }
-
-        logger.info("\nAuthorization was successful");
+        LOGGER.info("Authorization is successful");
         return accessTokenResponse;
     }
+
+    private String getProvidedPinByUser(final OAuthAuthorizeTemporaryTokenUrl authorizeUrl) throws TwitterAuthenticationException, AuthenticationException {
+        LOGGER.info("Reading the key provided by User");
+        String providedPin;
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(System.in))) {
+            LOGGER.info(String.format("Please click on the url to get the pin:\n  %s", authorizeUrl.build()));
+            LOGGER.info("\n Please enter the retrieved PIN:");
+            providedPin = br.readLine();
+        } catch (IOException e) {
+            throw new AuthenticationException("Pin can not be read" + e);
+        }
+        return providedPin;
+    }
+
+    private OAuthCredentialsResponse retrieveTempToken(final OAuthHmacSigner signer) throws TwitterAuthenticationException {
+        LOGGER.info("Retrieving the temp token");
+        OAuthGetTemporaryToken tempToken = new OAuthGetTemporaryToken(TwitterStreamConstants.REQUEST_TOKEN_URL);
+        tempToken.consumerKey = consumerKey;
+        tempToken.signer = signer;
+        tempToken.transport = HTTP_TRANSPORT;
+
+        OAuthCredentialsResponse credentialsResponse;
+        try {
+            credentialsResponse = tempToken.execute();
+        } catch (IOException e) {
+            throw new TwitterAuthenticationException("Exception occurred while retrieving the temp key: " + e.getMessage(), e);
+        }
+        return credentialsResponse;
+    }
+
 }

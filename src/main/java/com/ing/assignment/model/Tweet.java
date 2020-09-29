@@ -1,29 +1,53 @@
 package com.ing.assignment.model;
-import com.ing.assignment.constant.TwitterStreamConstants;
-import lombok.Builder;
-import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ing.assignment.constant.TweetKeyConstants;
+
 import java.util.Date;
 
 /**
  * @author Jagrati
  * Model class Tweet
  */
-@Data
-@Builder
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Tweet {
-    private long id;
-    private String created_at;
-    private String text;
-    private Author user;
+
+    @JsonProperty(TweetKeyConstants.AUTHOR)
+    private Author author;
+
+    @JsonProperty(TweetKeyConstants.TEXT)
+    private String messageText;
+
+    public Author getAuthor() {
+        return author;
+    }
+
+    public String getMessageText() {
+        return messageText;
+    }
+
+    public String getMessageId() {
+        return messageId;
+    }
+
+    public Date getCreationDate() {
+        return creationDate;
+    }
+
+    @JsonProperty(TweetKeyConstants.MESSAGE_ID)
+    private String messageId;
+
+    @JsonProperty(TweetKeyConstants.CREATED_AT)
+    private Date creationDate;
 
     @Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("\n")
-        .append(user.toString()).append(TwitterStreamConstants.AUTHOR_TWEET_DELIMITER)
-        .append(id).append(TwitterStreamConstants.TWEET_DELIMITER).
-                append(created_at).append(TwitterStreamConstants.TWEET_DELIMITER)
-                .append(text);
-        return builder.toString();
+    public String toString(){
+        return "Tweet: [[" +
+                TweetKeyConstants.AUTHOR + ": " + author.toString() + "," +
+                TweetKeyConstants.MESSAGE_ID + ": " + messageId + "," +
+                TweetKeyConstants.CREATED_AT + ": " + creationDate + "," +
+                TweetKeyConstants.TEXT + ": " + messageText +
+                "]]";
     }
 }

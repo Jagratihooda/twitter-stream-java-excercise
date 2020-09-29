@@ -1,13 +1,16 @@
 package com.ing.assignment.controller;
+import com.ing.assignment.model.Tweet;
 import com.ing.assignment.service.TweetStreamProcessService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import javax.naming.AuthenticationException;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * @author Jagrati
@@ -21,12 +24,10 @@ public class TwitterStreamController {
 	@Autowired
 	private TweetStreamProcessService tweetProcessService;
 
-	@Value("${twitter.search.string}")
-	private String searchString;
-
-	@GetMapping(path = "read-tweets")
-	public void readTweets() throws IOException {
-		LOGGER.info("Tweet end point called");
+	@GetMapping(path = "process-tweets")
+	public String  readTweets() throws IOException, AuthenticationException {
 		tweetProcessService.processTweets();
+		LOGGER.info("Tweets are dumped on log file");
+		return "Tweets are processed";
 	}
 }

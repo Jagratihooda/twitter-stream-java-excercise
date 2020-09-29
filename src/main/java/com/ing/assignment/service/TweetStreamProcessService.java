@@ -1,5 +1,9 @@
 package com.ing.assignment.service;
+import com.ing.assignment.model.Tweet;
+
+import javax.naming.AuthenticationException;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * @author Jagrati
@@ -10,7 +14,6 @@ public interface TweetStreamProcessService {
 	/**
 	 * This method read and stores tweet on a log file
 	 */
-	void processTweets() throws IOException;
-
+	List<Tweet>  processTweets() throws IOException, AuthenticationException;
 
 	}

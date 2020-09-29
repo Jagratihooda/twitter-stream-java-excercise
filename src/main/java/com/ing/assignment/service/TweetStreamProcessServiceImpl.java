@@ -1,19 +1,20 @@
 package com.ing.assignment.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpResponse;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.ing.assignment.configuration.TwitterAuthenticationConfiguration;
+import com.ing.assignment.configuration.TwitterStreamConfiguration;
+import com.ing.assignment.constant.TwitterStreamConstants;
 import com.ing.assignment.model.Tweet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import javax.naming.AuthenticationException;
 import java.io.*;
+import java.rmi.ServerException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,58 +28,69 @@ public class TweetStreamProcessServiceImpl implements TweetStreamProcessService 
     private static final Logger LOGGER = LoggerFactory.getLogger(TweetStreamProcessServiceImpl.class);
 
     @Value("${twitter.search.string}")
-    private String searchString;
-
+    private String searchParam;
+    private static final String DATE_FORMATTER = "EEE MMM dd HH:mm:ss Z yyyy";
     private static final int MAX_INCOMING_MSG_COUNT = 100;
-
-    /**
-     * Max interval of time
-     */
     private static final long MAX_TIME_INTERVAL = 30000;
 
     @Autowired
-    private TwitterAuthenticationConfiguration authenticationConfig;
+    private TwitterStreamConfiguration twitterStreamConfig;
 
-    private static final String ENDPOINT_TWITTER = "https://stream.twitter.com/1.1/statuses/filter.json?track=";
-
-    private static final Gson gson = new GsonBuilder().setLenient().create();
-
+    /**
+     * This method is used to fetch tweets and logs them on a log file.
+     * @throws IOException, AuthenticationException
+     * @return tweetList
+     */
     @Override
-    public void processTweets() throws IOException {
-        List<Tweet> tweetList = fetchTweetList(authenticationConfig.getTwitterConfig().getAuthorizedHttpRequestFactory());
-
-        Map<String, List<Tweet>> groupedAndSortedTweets = tweetList.stream().
-                sorted(Comparator.comparing(Tweet::getCreated_at))
-                .collect(Collectors.groupingBy(p -> p.getUser().getName()));
-
-        for (List<Tweet> userTweetList : groupedAndSortedTweets.values()) {
-            for(Tweet tweet: userTweetList) {
-                LOGGER.info(tweet.toString());
-            }
-        }
-
-    }
-    private List<Tweet> fetchTweetList(HttpRequestFactory httpRequestFactory) throws IOException{
+    public List<Tweet> processTweets() throws IOException, AuthenticationException {
         List<Tweet> tweetList = new ArrayList<>();
 
-        HttpRequest request = httpRequestFactory.buildGetRequest(
-                new GenericUrl(ENDPOINT_TWITTER.concat(searchString)));
-        HttpResponse response = request.execute();
-        InputStream in = response.getContent();
+        for (List<Tweet> usrTweets : getGroupedAndSortedTweets().values()) {
+            usrTweets.sort(Comparator.comparing(Tweet::getCreationDate));
+                for(Tweet tweet: usrTweets) {
+                    LOGGER.info(tweet.toString());
+                    tweetList.add(tweet);
+                }
+        }
+        LOGGER.info("Tweet Processing Completed");
+        return tweetList;
+    }
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-        String line = reader.readLine();
+    /**
+     * This method is used to fetch grouped and sorted tweets.
+     * @throws AuthenticationException, IOException
+     * @return tweetList
+     */
+    private Map<String, List<Tweet>> getGroupedAndSortedTweets() throws AuthenticationException, IOException {
+          return fetchTweetList().stream()
+                  .sorted(Comparator.comparing(p -> p.getAuthor().getCreationDate()))
+                  .collect(Collectors.groupingBy(p -> p.getAuthor().getUserId()));
+    }
 
-        int countTweets = 0;
-        long startTime = System.currentTimeMillis();
+    /**
+     * This method is used to fetch tweets and logs them on a log file.
+     * @throws IOException, AuthenticationException
+     * @return tweetList
+     */
+    private List<Tweet> fetchTweetList() throws IOException, AuthenticationException {
+        List<Tweet> tweetList = new ArrayList<>();
+        HttpRequest request = twitterStreamConfig.getHttpRequestFactory().buildGetRequest(
+                new GenericUrl(TwitterStreamConstants.ENDPOINT_TWITTER.concat(searchParam)));
 
-        while (line != null && countTweets < MAX_INCOMING_MSG_COUNT &&
-                (System.currentTimeMillis() - startTime < MAX_TIME_INTERVAL)) {
-            // Parse tweet and add to the list
-          tweetList.add(gson.fromJson(line, Tweet.class));
-
-            line = reader.readLine();
-            countTweets++;
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(request.execute().getContent()))) {
+            String line = reader.readLine();
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.setDateFormat(new SimpleDateFormat(DATE_FORMATTER, Locale.ENGLISH));
+            int countTweets = 0;
+            long readStartTime = System.currentTimeMillis();
+            while (line != null && (System.currentTimeMillis() - readStartTime < MAX_TIME_INTERVAL)
+                  && countTweets < MAX_INCOMING_MSG_COUNT) {
+                  tweetList.add(mapper.readValue(line, Tweet.class));
+                  line = reader.readLine();
+                  countTweets++;
+            }
+        } catch (IOException e) {
+            throw new ServerException("Exception Occurred while reading the tweets", e);
         }
         return tweetList;
     }
