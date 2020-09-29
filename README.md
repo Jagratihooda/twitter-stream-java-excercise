@@ -10,8 +10,8 @@
 
 - Configure Search Param in application properties
 
-- On first time run a URL will be displyed in console, open the URL in browser and enter the 
-  generated in the console input.
+- URL will be displyed in console on Application startup, open the URL in browser and enter the 
+  generated key as n input in console.
 
 - Output Tweets will be displayed in Console and logs/spring.log file
 
