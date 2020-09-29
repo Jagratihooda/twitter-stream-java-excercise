@@ -5,6 +5,7 @@ import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
 import com.ing.assignment.configuration.TwitterStreamConfiguration;
 import com.ing.assignment.constant.TwitterStreamConstants;
+import com.ing.assignment.exception.TwitterServiceException;
 import com.ing.assignment.model.Tweet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +43,7 @@ public class TweetStreamProcessServiceImpl implements TweetStreamProcessService 
      * @return tweetList
      */
     @Override
-    public List<Tweet> processTweets() throws IOException, AuthenticationException {
+    public  List<Tweet> processTweets() throws TwitterServiceException, IOException, AuthenticationException {
         List<Tweet> tweetList = new ArrayList<>();
 
         for (List<Tweet> usrTweets : getGroupedAndSortedTweets().values()) {
@@ -61,7 +62,7 @@ public class TweetStreamProcessServiceImpl implements TweetStreamProcessService 
      * @throws AuthenticationException, IOException
      * @return tweetList
      */
-    private Map<String, List<Tweet>> getGroupedAndSortedTweets() throws AuthenticationException, IOException {
+    private Map<String, List<Tweet>> getGroupedAndSortedTweets() throws TwitterServiceException, IOException, AuthenticationException {
           return fetchTweetList().stream()
                   .sorted(Comparator.comparing(p -> p.getAuthor().getCreationDate()))
                   .collect(Collectors.groupingBy(p -> p.getAuthor().getUserId()));
@@ -72,7 +73,8 @@ public class TweetStreamProcessServiceImpl implements TweetStreamProcessService 
      * @throws IOException, AuthenticationException
      * @return tweetList
      */
-    private List<Tweet> fetchTweetList() throws IOException, AuthenticationException {
+    private List<Tweet> fetchTweetList() throws IOException, TwitterServiceException, AuthenticationException {
+        LOGGER.info("Fetching data from Twitter Api");
         List<Tweet> tweetList = new ArrayList<>();
         HttpRequest request = twitterStreamConfig.getHttpRequestFactory().buildGetRequest(
                 new GenericUrl(TwitterStreamConstants.ENDPOINT_TWITTER.concat(searchParam)));

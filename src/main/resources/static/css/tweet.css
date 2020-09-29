@@ -1,0 +1,29 @@
+
+    
+    /* Set black background color, white text and some padding */
+    footer {
+      padding: 15px;
+      
+    }
+    h2{
+    line-height:2.5;
+    display:inline;
+    }
+    .header{
+    padding: 8px;
+    margin-left: 4%;
+    }
+    .tableData{
+    width: 92%;
+    margin-left: 4%;
+    }
+    .footerText{
+    text-align:right;
+    margin-right:4%;
+    }
+    .imageCustom{
+    float:right;
+    margin-right:7%;
+    margin-bottom:2%;
+    width:25%;   
+    }

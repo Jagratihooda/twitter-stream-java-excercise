@@ -25,9 +25,9 @@ public class TwitterStreamController {
 	private TweetStreamProcessService tweetProcessService;
 
 	@GetMapping(path = "process-tweets")
-	public String  readTweets() throws IOException, AuthenticationException {
-		tweetProcessService.processTweets();
+	public List<Tweet>   readTweets() throws IOException, AuthenticationException {
+		List<Tweet> tweetList = tweetProcessService.processTweets();
 		LOGGER.info("Tweets are dumped on log file");
-		return "Tweets are processed";
+		return tweetList;
 	}
 }
