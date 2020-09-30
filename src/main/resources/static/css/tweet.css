@@ -1,29 +1,39 @@
+/* Set black background color, white text and some padding */
+footer {
+    padding: 15px;
+}
 
-    
-    /* Set black background color, white text and some padding */
-    footer {
-      padding: 15px;
-      
-    }
-    h2{
-    line-height:2.5;
-    display:inline;
-    }
-    .header{
+h2 {
+    line-height: 2.5;
+    display: inline;
+}
+
+.header {
     padding: 8px;
     margin-left: 4%;
-    }
-    .tableData{
+}
+
+.tableData {
     width: 92%;
     margin-left: 4%;
-    }
-    .footerText{
-    text-align:right;
-    margin-right:4%;
-    }
-    .imageCustom{
-    float:right;
-    margin-right:7%;
-    margin-bottom:2%;
-    width:25%;   
-    }
+}
+
+.footerText {
+    text-align: right;
+    margin-right: 4%;
+}
+
+.imageCustom {
+    float: right;
+    margin-right: 7%;
+    margin-bottom: 2%;
+    width: 25%;
+}
+.spinnerImage{
+    z-index: 9999;
+    position: fixed;
+    left: 45%;
+    height:45px;
+    width:45px;
+    top: 45%;
+}
