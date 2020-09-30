@@ -19,6 +19,12 @@ public class Tweet {
     @JsonProperty(TweetKeyConstants.TEXT)
     private String messageText;
 
+    @JsonProperty(TweetKeyConstants.MESSAGE_ID)
+    private String messageId;
+
+    @JsonProperty(TweetKeyConstants.CREATED_AT)
+    private Date creationDate;
+
     public Author getAuthor() {
         return author;
     }
@@ -35,11 +41,6 @@ public class Tweet {
         return creationDate;
     }
 
-    @JsonProperty(TweetKeyConstants.MESSAGE_ID)
-    private String messageId;
-
-    @JsonProperty(TweetKeyConstants.CREATED_AT)
-    private Date creationDate;
 
     @Override
     public String toString(){
