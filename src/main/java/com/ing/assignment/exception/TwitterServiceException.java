@@ -2,7 +2,7 @@ package com.ing.assignment.exception;
 
 /**
  * @author Jagrati
- * service api exception
+ * service exception
  */
 public class TwitterServiceException extends RuntimeException {
 
