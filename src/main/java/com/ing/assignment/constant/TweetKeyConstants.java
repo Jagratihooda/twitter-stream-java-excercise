@@ -6,6 +6,9 @@ package com.ing.assignment.constant;
  */
 public class TweetKeyConstants {
 
+    private TweetKeyConstants(){
+        /*Utility class should not have public constructor*/
+    }
     public static final String AUTHOR = "user";
     public static final String USER_ID = "id";
     public static final String NAME = "name";
