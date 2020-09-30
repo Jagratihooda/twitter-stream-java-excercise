@@ -39,7 +39,7 @@ public class TwitterAuthenticator {
      *
      * @return requestFactory
      */
-    public HttpRequestFactory getHttpRequestFactory() throws AuthenticationException {
+    public HttpRequestFactory getHttpRequestFactory() {
         if (requestFactory != null) {
             return requestFactory;
         }
@@ -47,7 +47,7 @@ public class TwitterAuthenticator {
         return requestFactory;
     }
 
-    private HttpRequestFactory retrieveHttpRequestFactory() throws AuthenticationException {
+    private HttpRequestFactory retrieveHttpRequestFactory() {
         LOGGER.info("creating Request Factory");
         OAuthHmacSigner signer = new OAuthHmacSigner();
         signer.clientSharedSecret = consumerSecret;
@@ -86,20 +86,20 @@ public class TwitterAuthenticator {
         return accessTokenResponse;
     }
 
-    private String getProvidedPinByUser(final OAuthAuthorizeTemporaryTokenUrl authorizeUrl) throws TwitterAuthenticationException, AuthenticationException {
+    private String getProvidedPinByUser(final OAuthAuthorizeTemporaryTokenUrl authorizeUrl) {
         LOGGER.info("Reading the key provided by User");
-        String providedPin;
+        String providedPin = null;
         try (BufferedReader br = new BufferedReader(new InputStreamReader(System.in))) {
-            LOGGER.info(String.format("Please click on the url to get the pin:\n  %s", authorizeUrl.build()));
+            LOGGER.info(String.format("Please click on the url to get the pin:%n  %s", authorizeUrl.build()));
             LOGGER.info("\n Please enter the retrieved PIN:");
             providedPin = br.readLine();
         } catch (IOException e) {
-            throw new AuthenticationException("Pin can not be read" + e);
+            LOGGER.error("Error occured while reading the pin" + e);
         }
         return providedPin;
     }
 
-    private OAuthCredentialsResponse retrieveTempToken(final OAuthHmacSigner signer) throws TwitterAuthenticationException {
+    private OAuthCredentialsResponse retrieveTempToken(final OAuthHmacSigner signer) {
         LOGGER.info("Retrieving the temp token");
         OAuthGetTemporaryToken tempToken = new OAuthGetTemporaryToken(TwitterStreamConstants.REQUEST_TOKEN_URL);
         tempToken.consumerKey = consumerKey;
