@@ -1,10 +1,9 @@
 package com.ing.assignment.configuration;
+
 import com.google.api.client.http.HttpRequestFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import javax.naming.AuthenticationException;
 
 @Configuration
 public class TwitterStreamConfiguration {
@@ -14,7 +13,7 @@ public class TwitterStreamConfiguration {
     private String consumerSecret;
 
     @Bean
-    public HttpRequestFactory getHttpRequestFactory() throws AuthenticationException {
+    public HttpRequestFactory getHttpRequestFactory() {
         return new TwitterAuthenticator(consumerKey, consumerSecret).getHttpRequestFactory();
     }
 
